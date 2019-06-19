@@ -140,7 +140,6 @@ def drawYlines_CDF(vlines):
 
 
 def plotCDF(CDFs, vlines, indiv_plotsDir, plotTitile='', xlabel='Throughput (Mbits/sec)'):
-    # colors = ['#0571b0', '#404040', '#7b3294', '#008837']
     fig, ax = plt.subplots()
     count = 0
     for test in CDFs:
@@ -155,14 +154,12 @@ def plotCDF(CDFs, vlines, indiv_plotsDir, plotTitile='', xlabel='Throughput (Mbi
     vcolors = ['#a6611a', '#018571', '#ca0020', '#0571b0']
     count = 0
     for vline in vlines:
-        # rate = vlines[vline]
         plt.axvline(x=vline, linewidth=10, alpha=0.25, color=vcolors[count % len(vcolors)],
                     label='{} Mbps'.format(vline))
         count += 1
 
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.xlabel(xlabel)
-    # plt.ylabel('CDF')
     plt.ylim((0, 1.1))
     # set font size
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
@@ -179,8 +176,6 @@ def plotCDF(CDFs, vlines, indiv_plotsDir, plotTitile='', xlabel='Throughput (Mbi
 
 
 def plotThroughput(tests, hlines, indiv_plotsDir, plotTitile):
-    # matplotlib.rcParams.update({'font.size': 36})
-    colors = ['#0571b0', '#404040', '#0571b0', '#7b3294', '#008837']
     fig, ax = plt.subplots(figsize=(15, 6))
     count = 0
     for test in tests:
@@ -201,7 +196,6 @@ def plotThroughput(tests, hlines, indiv_plotsDir, plotTitile):
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
                  ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(20)
-    # plt.title('{}_{}_{}_xput'.format(carrierName, replayName, test_name))
     plt.savefig(indiv_plotsDir + plotTitile + '_xputs.png', bbox_inches='tight')
     plt.cla()
     plt.clf()
@@ -230,8 +224,6 @@ def plotIndividualTest(timestampsOriginal, xPutsOriginal,
     Xrandom, Yrandom = list2CDF(xPutsRandomSorted)
 
     twoCDFs = {'Original replay': (Xoriginal, Yoriginal), 'Bit-inverted replay': (Xrandom, Yrandom)}
-
-    # originalCDF = {'original replay': (Xoriginal, Yoriginal)}
 
     plotCDF(twoCDFs, vlines, indiv_plotsDir, plotTitle)
 
@@ -1571,8 +1563,6 @@ class singleISPstats(object):
                 if (aggregationGroup not in self.positiveTests[replayName]) or (
                         aggregationGroup not in self.negativeTests[replayName]):
                     continue
-                # TODO once more testType (i.e., true positives with different throttling rates)
-                # need to update the way number of tests are updated
                 for onePositiveTest in self.positiveTests[replayName][aggregationGroup]:
                     incomingTime = onePositiveTest['geoInfo']['localTime']
                     if incomingTime:
@@ -1871,11 +1861,9 @@ if __name__ == "__main__":
     allThrottlingCases = {}
     weheDiffStatFile = 'weheDiffStat.json'
 
-    countISPwithEnoughTests = 0
     # tests are grouped by ISP
     for ISPDir in os.listdir(allISPDir):
-        ISPwithEnoughTests = False
-        print('\r\n analyzing {}, total ISPs {}, ISPs with throttling {}'.format(ISPDir, countISP, countThrottling))
+        print('\r\n analyzing {}, total ISPs analyzed {}, ISPs with throttling {}'.format(ISPDir, countISP, countThrottling))
         ISP_full_Dir = allISPDir + ISPDir
         if os.path.isdir(ISP_full_Dir):
             countISP += 1
