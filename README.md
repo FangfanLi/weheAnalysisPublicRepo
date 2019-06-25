@@ -14,3 +14,5 @@ A sample run:
 3. Detection results will be in weheDiffStat.json generated in the scripts' directory, which contains metadata such as detected throttling rate.
 4. All plots such as CDF of throughputs, locations of tests ... can be found in /directory/ExampleWeheDataset/SubsetsATT (cellular)/
 
+
+The scripts for analyzing the impact on video streaming are in the impact_on_videostreaming directory.
