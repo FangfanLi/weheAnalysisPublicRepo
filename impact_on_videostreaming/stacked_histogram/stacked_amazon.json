@@ -1,0 +1,20 @@
+{  "bevents_ATT_amazon": {"v8": 4.7333333333, "v5": 0.26666666666666666}, 
+"bevents_Sprint_amazon": {"v8": 4.425, "v5": 0.575 }, 
+"bevents_TMobile_amazon": {"v8": 4.9275, "v5": 0.0725},
+"bevents_Verizon_amazon": {"v8": 4.9, "v5": 0.1},
+  "bevents_ATT_better_amazon": {"v12":4.9999},
+        "bevents_Sprint_better_amazon": {"v12":4.9999}, 
+             "bevents_TMobile_better_amazon": {"v12":4.9999}, 
+        "bevents_Verizon_better_amazon": {"v12":4.9999}, 
+   "bevents_ATT_VPN_amazon": {"v8":4.9999},
+        "bevents_Sprint_VPN_amazon": {"v8": 4.9666666667, "v5": 0.03333333333333333},
+               "bevents_TMobile_VPN": {"v8":4.9999},
+       "bevents_Verizon_VPN_amazon": {"v8":4.9999},
+                "bevents_ATT_VPN_better_amazon": {"v12":4.9999}, 
+                "bevents_Sprint_VPN_better_amazon": {"v12": 4.9666666667, "v8": 0.03333333333333333}, 
+     "bevents_TMobile_VPN_better_amazon": {"v12":4.9999},
+ "bevents_Verizon_VPN_better_amazon": {"v12":4.9999},
+             "bevents_WiFi_amazon": {"v12": 4.95, "v8": 0.05},
+         "bevents_WiFi_VPN_amazon": {"v12":4.9999}
+          }
+

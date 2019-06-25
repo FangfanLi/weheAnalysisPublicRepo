@@ -1,0 +1,25 @@
+{
+
+
+"bevents_ATT_Netflix": {"384x216": 5.0},
+ "bevents_Sprint_Netflix": {"384x216": 5.0},
+  "bevents_TMobile_Netflix": {"384x216": 5.0},
+   "bevents_Verizon_Netflix": {"384x216": 5.0}, 
+
+   "bevents_ATT_better_Netflix": {"384x216": 5.0},
+    "bevents_Sprint_better_Netflix": {"384x216": 4.3083333333, "608x342": 0.6916666666666667}, 
+    "bevents_TMobile_better_Netflix": {"384x216": 2.9416666666666666, "640x480": 0.5, "608x342": 1.5583333333333333}, 
+    "bevents_Verizon_better_Netflix": {"384x216": 4.4083333333, "608x342": 0.5916666666666667}, 
+
+    "bevents_ATT_VPN_Netflix": {"640x480": 5.0}, 
+    "bevents_Sprint_VPN_Netflix": {"384x216": 5.0},
+     "bevents_TMobile_VPN_Netflix": {"640x480": 5.0}, 
+     "bevents_Verizon_VPN_Netflix": {"640x480": 5.0},
+
+      "bevents_ATT_VPN_better_Netflix": {"1280x720": 3.875, "640x480": 1.125}, 
+      "bevents_Sprint_VPN_better_Netflix": {"640x480": 0.47500000000000003, "608x342": 0.6583333333333333, "384x216": 1.1666666667, "960x540": 0.7083333333333334, "1280x720": 1.9916666666666667}, 
+      "bevents_TMobile_VPN_better_Netflix": {"1280x720": 4.366666666666667, "640x480": 0.6333333333},
+       "bevents_Verizon_VPN_better_Netflix": {"1280x720": 4.333333333333334, "640x480": 0.6666666667}, 
+
+       "bevents_WiFi_Netflix": {"1280x720": 4.916666666666666, "640x480": 0.08333333333333333},
+        "bevents_WiFi_VPN_Netflix": {"1280x720": 4.425, "640x480": 0.575}}
