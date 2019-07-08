@@ -82,6 +82,9 @@ import random
 from matplotlib.ticker import MaxNLocator
 import seaborn as sns
 
+MIN_NUMTESTS = 100
+MIN_NUMPOSITIVETESTS = 10
+
 sns.set(style="darkgrid")
 
 
@@ -804,6 +807,29 @@ def getQuaterFromMonth(month):
     return quarter
 
 
+def updateReplayName(replayName):
+    if 'Random' in replayName:
+        appName = replayName.split('Random')[0]
+    else:
+        appName = replayName.split('_')[0]
+
+    # make the replayName Skype, instead of SkypeUDP
+    if 'UDP' in appName:
+        appName = appName.split('UDP')[0] + appName.split('UDP')[1]
+
+    if 'Amazon' in replayName:
+        if ('12122018' or '01042019') in replayName:
+            appName = 'Amazon (HTTP)'
+        else:
+            appName = 'Amazon (HTTPS)'
+
+    if 'Vimeo' in replayName:
+        if '12122018' in replayName:
+            appName = 'Vimeo (vimeocdn)'
+
+    return appName, replayName
+
+
 '''
 For each ISP, create 3 subdirectories: timeAnalysis, testPlots, individualPlots
 
@@ -912,7 +938,8 @@ class singleISPstats(object):
         for replayName in self.allTests:
             for aggregationGroup in self.allTests[replayName]:
                 json.dump(self.allTests[replayName][aggregationGroup],
-                          open('{}/{}_{}_{}.json'.format(self.ISPdir, self.carrierName, replayName, aggregationGroup), 'w'))
+                          open('{}/{}_{}_{}.json'.format(self.ISPdir, self.carrierName, replayName, aggregationGroup),
+                               'w'))
 
     # filter out the tests before the startDate
     def filterTests(self, allTests, startDate):
@@ -966,15 +993,15 @@ class singleISPstats(object):
 
     def performAnalysis(self, replayName, aggregationGroup):
         self.separatePositiveTests(replayName, aggregationGroup)
+        # if not enough tests
+        if (len(self.allTests[replayName][aggregationGroup]) < MIN_NUMTESTS) and (
+                len(self.positiveTests[replayName][aggregationGroup]) < MIN_NUMPOSITIVETESTS):
+            return
         # if there exists positive tests
-        if self.positiveTests[replayName][aggregationGroup]:
+        elif self.positiveTests[replayName][aggregationGroup]:
             # detect whether fixed rate throttling
             delayedBytes, delayedTime = self.getDelayedThrottlingStat(replayName, aggregationGroup)
             self.detectFixRateThrottling(replayName, aggregationGroup, delayedBytes, delayedTime)
-
-    def countTests(self, replayName, aggregationGroup):
-        self.separatePositiveTests(replayName, aggregationGroup)
-        return len(self.allTests[replayName][aggregationGroup]), len(self.positiveTests[replayName][aggregationGroup])
 
     # Include a test if it has a original/random replay pair
     # Separate tests into positive and negative based on individual differentiation result with Bonferroni correction
@@ -1247,9 +1274,6 @@ class singleISPstats(object):
         positiveAveThroughputsOriginal, positiveAveThroughputsRandom, negativeAvgThroughputsOriginal, negativeAvgThroughputsRandom = self.getAveThroughputsAfterBoost(
             replayName, aggregationGroup, boostBytes, boostTime)
 
-        # get *all* original/random throughput samples (after boosting for positive ones) from *all* tests
-        # positiveAveThroughputsOriginal, positiveAveThroughputsRandom, negativeAvgThroughputsOriginal, negativeAvgThroughputsRandom = self.getThroughputsAfterBoost(
-        #     replayName, aggregationGroup, boostBytes, boostTime)
 
         differenceInPolulation = False
         ks2pValOriginalRandom = None
@@ -1269,21 +1293,13 @@ class singleISPstats(object):
         ylimAll = None
         y2limAll = None
         if differenceInPolulation:
-            json.dump((positiveAveThroughputsOriginal + negativeAvgThroughputsOriginal,
-                       positiveAveThroughputsRandom + negativeAvgThroughputsRandom),
-                      open('{}/{}_{}_{}_aveXputsAllTests.json'.format(self.plotDataDir, self.carrierName, replayName,
-                                                                      aggregationGroup), 'w'))
             throttlingRatesAll, positiveRangesAll, ylimAll, y2limAll = self.detectValueWithHighDensity(
                 positiveAveThroughputsOriginal + negativeAvgThroughputsOriginal,
                 positiveAveThroughputsRandom + negativeAvgThroughputsRandom,
                 plotTitle='{}_{}_{}_allTests'.format(self.carrierName, replayName, aggregationGroup))
-            # print('\r\n step 2', self.carrierName, replayName, aggregationGroup, throttlingRatesAll)
 
         # Step 3, check whether there is rate(s) with high density detected both with positive tests and all tests
         if throttlingRatesAll:
-            json.dump((positiveAveThroughputsOriginal, positiveAveThroughputsRandom),
-                      open('{}/{}_{}_{}_aveXputsPosTests.json'.format(self.plotDataDir, self.carrierName, replayName,
-                                                                      aggregationGroup), 'w'))
             throttlingRatesPos, positiveRangesPos, ylim, y2lim = self.detectValueWithHighDensity(
                 positiveAveThroughputsOriginal, positiveAveThroughputsRandom, ylim=ylimAll, y2lim=y2limAll,
                 plotTitle='{}_{}_{}_posTests'.format(self.carrierName, replayName, aggregationGroup))
@@ -1293,8 +1309,6 @@ class singleISPstats(object):
                     if positiveRangePos[0] < throttlingRateAll < positiveRangePos[1]:
                         throttlingTruePositiveRanges.append(positiveRangePos)
                         throttlingRatesDetected.append(throttlingRateAll)
-
-            # print('\r\n step 3', self.carrierName, replayName, aggregationGroup, throttlingRatesDetected)
 
         # plotting out the distributions if fixed rate throttling is detected
         if throttlingRatesDetected:
@@ -1312,10 +1326,6 @@ class singleISPstats(object):
 
             twoCDFs = {'Original replay': (Xoriginal, Yoriginal),
                        'Bit-inverted replay': (Xrandom, Yrandom)}
-
-            json.dump((twoCDFs, throttlingRatesDetected),
-                      open('{}/{}_{}_{}_CDFThrottlingRates.json'.format(self.plotDataDir, self.carrierName, replayName,
-                                                                        aggregationGroup), 'w'))
 
             plotCDF(twoCDFs, throttlingRatesDetected, self.diffDir,
                     '{}_{}_{}_ks_{}_ar_{}_allTests_'.format(self.carrierName, replayName, aggregationGroup,
@@ -1436,9 +1446,6 @@ class singleISPstats(object):
                            'After change point': (Xafterboost, Yafterboost)}
                 plotCDF(twoCDFs, [], self.diffDir, 'CDF_{}'.format(plotTitle))
                 samplingLeft, samplingRight = getRange(delayedBytesAggregated)
-                json.dump(delayedBytesAggregated,
-                          open('{}/{}_{}_{}_delayedBytes.json'.format(self.plotDataDir, self.carrierName, replayName,
-                                                                      aggregationGroup), 'w'))
                 delayedBytes, delayedBytesKDEvalues, delayedBytesTruePositiveRanges, ylim, y2lim = self.KDEtest(
                     delayedBytesAggregated,
                     samplingLeft,
@@ -1446,7 +1453,6 @@ class singleISPstats(object):
                     xlabel='Number of bytes transmitted before throttling',
                     plotTitle='bytes_{}'.format(
                         plotTitle))
-                # When throttling rate > 2 Mbps, the first ~ 2 MB of Netflix replay might be falsely detected as boost
 
         return delayedBytes, delayedTime
 
@@ -1860,10 +1866,21 @@ if __name__ == "__main__":
 
     allThrottlingCases = {}
     weheDiffStatFile = 'weheDiffStat.json'
+    weheStatFile = 'weheStat.json'
+
+    diffAppData = {}
+    diffCountryData = {}
+    throttlingData = []
+
+    appDataAll = {}
+    countryDataAll = {}
+    dateData = {}
+    numTests = 0
+    numDiffTests = 0
 
     # tests are grouped by ISP
     for ISPDir in os.listdir(allISPDir):
-        print('\r\n analyzing {}, total ISPs analyzed {}, ISPs with throttling {}'.format(ISPDir, countISP, countThrottling))
+        print('\r\n analyzing {}, total ISPs {}, ISPs with throttling {}'.format(ISPDir, countISP, countThrottling))
         ISP_full_Dir = allISPDir + ISPDir
         if os.path.isdir(ISP_full_Dir):
             countISP += 1
@@ -1875,6 +1892,23 @@ if __name__ == "__main__":
                     # If fixed rate throttling is detected for a given ISP-Replay-AggregationGroup specification
                     # The true positives for this specification will be in the truePositiveTests list
                     # The throttling stat (e.g., throttling rates detected) will be kept in oneISP.throttlingStat
+                    appName, replayName = updateReplayName(replayName)
+                    if appName not in appDataAll:
+                        appDataAll[appName] = 0
+                    appDataAll[appName] += len(oneISP.allTests[replayName][aggregationGroup])
+                    for oneTest in oneISP.allTests[replayName][aggregationGroup]:
+                        countryCode = oneTest['geoInfo']['countryCode']
+                        incomingTime = oneTest['geoInfo']['localTime']
+                        if not incomingTime:
+                            incomingTime = oneTest['timestamp']
+                        incomingYMD = incomingTime.split(' ')[0]
+                        if incomingYMD not in dateData:
+                            dateData[incomingYMD] = 0
+                        dateData[incomingYMD] += 1
+                        if countryCode not in countryDataAll:
+                            countryDataAll[countryCode] = 0
+                        countryDataAll[countryCode] += 1
+                        numTests += 1
 
             # dump the throttling info for this ISP into a json file
             oneISP.resultsBookKeeping()
@@ -1882,18 +1916,80 @@ if __name__ == "__main__":
             if oneISP.throttlingStats:
                 print('\r\n throttling detected', oneISP.throttlingStats)
                 for replayName in oneISP.throttlingStats:
-                    for aggregationGroup in oneISP.allTests[replayName]:
-                        oneISP.analyzeTestsPerOS(replayName, aggregationGroup)
-                        oneISP.plotTestsGPS(replayName, aggregationGroup)
-                        oneISP.analyzeTestsPerState([replayName], [aggregationGroup])
-                        oneISP.analyzeTestsPerHour(replayName, aggregationGroup)
+                    # for aggregationGroup in oneISP.allTests[replayName]:
+                    #     oneISP.analyzeTestsPerOS(replayName, aggregationGroup)
+                    #     oneISP.plotTestsGPS(replayName, aggregationGroup)
+                    #     oneISP.analyzeTestsPerState([replayName], [aggregationGroup])
+                    #     oneISP.analyzeTestsPerHour(replayName, aggregationGroup)
                     for aggregationGroup in oneISP.throttlingStats[replayName]:
                         carrierReplayName = '{}_{}'.format(oneISP.carrierName, replayName)
 
                         if carrierReplayName not in allThrottlingCases:
                             allThrottlingCases[carrierReplayName] = {}
 
-                        allThrottlingCases[carrierReplayName][aggregationGroup] = oneISP.throttlingStats[replayName][
+                        appName, replayName = updateReplayName(replayName)
+
+                        # Update diff metadata using truPositiveTests
+                        for truePositveTest in oneISP.truePositiveTests[replayName][aggregationGroup]:
+                            if appName not in diffAppData:
+                                diffAppData[appName] = 0
+                            diffAppData[appName] += 1
+                            countryCode = truePositveTest['geoInfo']['countryCode']
+                            if countryCode not in diffCountryData:
+                                diffCountryData[countryCode] = 0
+                            diffCountryData[countryCode] += 1
+                            numDiffTests += 1
+
+                        thisThrottlingStat = oneISP.throttlingStats[replayName][
                             aggregationGroup]
+
+                        allThrottlingCases[carrierReplayName][aggregationGroup] = thisThrottlingStat
+
+                        throttlingPercentage = round(thisThrottlingStat["Number of true positive tests"] / float(
+                            thisThrottlingStat["Number of total tests"]), 2) * 100
+
+                        limitingRates = thisThrottlingStat["Throttling rates"]
+                        allLimitingRates = ""
+                        for limitingRate in limitingRates:
+                            allLimitingRates += '{}</br>'.format(limitingRate)
+                        allLimitingRates = allLimitingRates[:-5]
+
+                        throttlingPercentage = '{}%'.format(throttlingPercentage)
+                        thisThrottlingData = [oneISP.carrierName, appName, allLimitingRates,
+                                              thisThrottlingStat["Number of true positive tests"], throttlingPercentage]
+                        throttlingData.append(thisThrottlingData)
                     countThrottling += 1
+
+    # print(throttlingData, diffCountryData, diffAppData, appDataAll, countryDataAll, dateData)
     json.dump(allThrottlingCases, open(weheDiffStatFile, 'w'))
+
+    countryDiffTests = []
+    for countryCode in diffCountryData:
+        countryDiffTests.append([countryCode, diffCountryData[countryCode]])
+
+    countryTests = []
+    for countryCode in countryDataAll:
+        countryTests.append([countryCode, countryDataAll[countryCode]])
+
+    appTests = []
+    for appName in appDataAll:
+        appTests.append([appName, appDataAll[appName]])
+
+    appDiffTests = []
+    for appName in diffAppData:
+        appDiffTests.append([appName, diffAppData[appName]])
+
+    dateTests = []
+    for date in dateData:
+        dateTests.append([date, dateData[date]])
+
+    weheStat = {
+        'throttlingData': throttlingData,
+        'countryDiffTests': countryDiffTests,
+        'countryTests': countryTests,
+        'appTests': appTests,
+        'appDiffTests': appDiffTests,
+        'dateTests': dateTests
+    }
+
+    json.dump(weheStat, open(weheStatFile, 'w'))

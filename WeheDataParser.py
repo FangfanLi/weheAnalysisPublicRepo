@@ -55,14 +55,12 @@ def getFrenchCarrierName(wifiCarrierName):
     return carrierName
 
 
-class clientTestsInfo(object):
-    def __init__(self, clientDir):
+class currentTestsInfo(object):
+    def __init__(self, currentDir):
         self.testsPerDay = {'WiFi': {}, 'cellular': {}}
-        self.testsPerCountry = {}
         self.testsPerISP = {}
-        self.testsPerApp = {}
         self.numTests = 0
-        self.parseAllTests(clientDir)
+        self.parseAllTests(currentDir)
 
     '''
     update testsPerDay, testsPerCountry, testsPerISP, numTests
@@ -70,9 +68,9 @@ class clientTestsInfo(object):
     Do not filter any test, add them as is
     '''
 
-    def parseAllTests(self, clientDir):
+    def parseAllTests(self, currentDir):
 
-        decisionDir = clientDir + '/decisions'
+        decisionDir = currentDir + '/decisions'
         # if no test was ever finished
         if not os.path.isdir(decisionDir):
             return
@@ -109,10 +107,10 @@ class clientTestsInfo(object):
             randomXputsFileName = 'Xput_{}_{}_{}'.format(userID, historyCount, 1)
             mobileStatsFileName = 'mobileStats_{}_{}_{}'.format(userID, historyCount, testID)
 
-            replayInfoFileName = clientDir + '/replayInfo/' + replayInfoFileName
-            originalXputInfoFile = clientDir + '/clientXputs/' + originalXputsFileName
-            randomXputInfoFile = clientDir + '/clientXputs/' + randomXputsFileName
-            mobileStatsFile = clientDir + '/mobileStats/' + mobileStatsFileName
+            replayInfoFileName = currentDir + '/replayInfo/' + replayInfoFileName
+            originalXputInfoFile = currentDir + '/clientXputs/' + originalXputsFileName
+            randomXputInfoFile = currentDir + '/clientXputs/' + randomXputsFileName
+            mobileStatsFile = currentDir + '/mobileStats/' + mobileStatsFileName
 
             replayInfo = loadReplayInfo(replayInfoFileName)
             original_xputs, original_ts = loadClientXputs(originalXputInfoFile)
@@ -144,16 +142,11 @@ class clientTestsInfo(object):
 
             appName, replayName = self.updateReplayName(replayInfo[4])
 
-            if appName not in self.testsPerApp:
-                self.testsPerApp[appName] = 0
-            self.testsPerApp[appName] += 1
-
             networkType = mobileStats['networkType']
 
-            # if "updatedCarrierName" in mobileStats:
-            #     carrierName = mobileStats["updatedCarrierName"]
-            # else:
-            if networkType == 'WIFI':
+            if "updatedCarrierName" in mobileStats:
+                carrierName = mobileStats["updatedCarrierName"]
+            elif networkType == 'WIFI':
                 carrierName = self.getCarrierNameByIP(clientIP)
             else:
                 carrierName = ''.join(e for e in mobileStats['carrierName'] if e.isalnum())
@@ -210,9 +203,6 @@ class clientTestsInfo(object):
                 localTime = mobileStats["locationInfo"]['localTime']
             else:
                 localTime = getLocalTime(incomingTime, lon, lat)
-
-            # Update testsPerCountry
-            addOrUpdate(self.testsPerCountry, countryCode, 1)
             self.numTests += 1
 
             self.testsPerISP[carrierName][replayName].append({'uniqueTestID': uniqueTestID,
@@ -335,13 +325,6 @@ def getRangeAndOrg(ip):
     elif 'netname:' in out:
         orgName = out.split('netname:')[1].split('\n')[0]
 
-    countryCode = ''
-    # Get Country
-    if 'country:' in out:
-        countryCode = out.split('country:')[1].split('\n')[0]
-    elif 'Country:' in out:
-        countryCode = out.split('Country:')[1].split('\n')[0]
-
     if orgName and netRange:
         return IPRange, orgName
     else:
@@ -403,17 +386,12 @@ def loadReplayInfo(replayInfoFileName):
         replayInfoJson = replayInfoFileName + '.json'
         if os.path.exists(replayInfoPickle):
             replayInfo = pickle.load(open(replayInfoPickle, 'r'))
-            # replayFileJSON = replayInfoPickle.replace('.pickle', '.json')
-            # json.dump(replayInfo, open(replayFileJSON, 'w'))
         elif os.path.exists(replayInfoJson):
             replayInfo = json.load(open(replayInfoJson, 'r'))
         else:
-            # traceback.print_exc(file=sys.stdout)
-            # logger.warn('Failed at finding replayInfo for {} '.format(resultFile))
             return False
     except:
         traceback.print_exc(file=sys.stdout)
-        # logger.warn('Failed at Loading replay Info or results for {} {}'.format(replayInfoFileName, resultFile))
         return False
 
     return replayInfo
@@ -426,7 +404,6 @@ def loadClientXputs(xputInfofile):
         xputInfoJson = xputInfofile + '.json'
         if os.path.exists(xputInfoPickle):
             (xPuts, ts) = pickle.load(open(xputInfoPickle, 'r'))
-            # json.dump((xPuts, ts), open(xputInfoJson, 'w'))
         elif os.path.exists(xputInfoJson):
             (xPuts, ts) = json.load(open(xputInfoJson, 'r'))
         else:
@@ -506,7 +483,7 @@ each test contains the following fields:
 '''
 
 
-def createJSONForallISP(clientsDir, resultsDir):
+def createJSONForallISP(testsDir, resultsDir):
     countClientsWithTest = 0
     countClientsNoTest = 0
     countTotalTests = 0
@@ -515,21 +492,19 @@ def createJSONForallISP(clientsDir, resultsDir):
     countClientsBoth = 0
 
     allTestsPerDay = {'WiFi': {}, 'cellular': {}}
-    allTestsPerCountry = {}
     allTestsPerISP = {}
-    allTestsPerApp = {}
 
     countMultiplier = 0
-    for client in os.listdir(clientsDir):
+    for oneDir in os.listdir(testsDir):
         if countTotalTests >= 10000 * countMultiplier:
             logger.info(
-                '\r\n new client {}, all tests so far {}, all users with test so far {}'.format(client, countTotalTests,
+                '\r\n new tests {}, all tests so far {}, all users with test so far {}'.format(oneDir, countTotalTests,
                                                                                                 countClientsWithTest))
             countMultiplier += 1
-        clientDir = clientsDir + '/' + client
-        clientInfo = clientTestsInfo(clientDir)
+        currentDir = testsDir + '/' + oneDir
+        currentInfo = currentTestsInfo(currentDir)
 
-        if clientInfo.numTests:
+        if currentInfo.numTests:
             countClientsWithTest += 1
         else:
             countClientsNoTest += 1
@@ -537,15 +512,15 @@ def createJSONForallISP(clientsDir, resultsDir):
 
         wifiTested = False
         cellularTested = False
-        for networkType in clientInfo.testsPerDay:
+        for networkType in currentInfo.testsPerDay:
             clientTestsNetwork = 0
-            for testDate in clientInfo.testsPerDay[networkType]:
-                countTotalTests += clientInfo.testsPerDay[networkType][testDate]
-                clientTestsNetwork += clientInfo.testsPerDay[networkType][testDate]
+            for testDate in currentInfo.testsPerDay[networkType]:
+                countTotalTests += currentInfo.testsPerDay[networkType][testDate]
+                clientTestsNetwork += currentInfo.testsPerDay[networkType][testDate]
                 if testDate not in allTestsPerDay[networkType]:
-                    allTestsPerDay[networkType][testDate] = clientInfo.testsPerDay[networkType][testDate]
+                    allTestsPerDay[networkType][testDate] = currentInfo.testsPerDay[networkType][testDate]
                 else:
-                    allTestsPerDay[networkType][testDate] += clientInfo.testsPerDay[networkType][testDate]
+                    allTestsPerDay[networkType][testDate] += currentInfo.testsPerDay[networkType][testDate]
             # if the client has tests for this network
             if clientTestsNetwork:
                 if networkType == 'WiFi':
@@ -559,41 +534,25 @@ def createJSONForallISP(clientsDir, resultsDir):
                     if wifiTested:
                         countClientsBoth += 1
 
-        for testCountry in clientInfo.testsPerCountry:
-            if testCountry not in allTestsPerCountry:
-                allTestsPerCountry[testCountry] = clientInfo.testsPerCountry[testCountry]
-            else:
-                allTestsPerCountry[testCountry] += clientInfo.testsPerCountry[testCountry]
-
         # count testfromthisISP
         clientTestsNumber = 0
 
-        for testISP in clientInfo.testsPerISP:
-            for replayName in clientInfo.testsPerISP[testISP]:
-                clientTestsNumber += len(clientInfo.testsPerISP[testISP][replayName])
+        for testISP in currentInfo.testsPerISP:
+            for replayName in currentInfo.testsPerISP[testISP]:
+                clientTestsNumber += len(currentInfo.testsPerISP[testISP][replayName])
 
-        for testISP in clientInfo.testsPerISP:
+        for testISP in currentInfo.testsPerISP:
             if testISP not in allTestsPerISP:
-                allTestsPerISP[testISP] = copy.deepcopy(clientInfo.testsPerISP[testISP])
+                allTestsPerISP[testISP] = copy.deepcopy(currentInfo.testsPerISP[testISP])
             else:
-                for replayName in clientInfo.testsPerISP[testISP]:
+                for replayName in currentInfo.testsPerISP[testISP]:
                     if replayName not in allTestsPerISP[testISP]:
-                        allTestsPerISP[testISP][replayName] = copy.deepcopy(clientInfo.testsPerISP[testISP][replayName])
+                        allTestsPerISP[testISP][replayName] = copy.deepcopy(currentInfo.testsPerISP[testISP][replayName])
                     else:
                         allTestsPerISP[testISP][replayName] += copy.deepcopy(
-                            clientInfo.testsPerISP[testISP][replayName])
-
-        for appName in clientInfo.testsPerApp:
-            if appName not in allTestsPerApp:
-                allTestsPerApp[appName] = 0
-            allTestsPerApp[appName] += 1
-        #
-        # if countClientsWithTest > 30:
-        #     break
+                            currentInfo.testsPerISP[testISP][replayName])
 
     json.dump(allTestsPerDay, open('allTestsPerDay.json', 'w'))
-    json.dump(allTestsPerCountry, open('allTestsPerCountry.json', 'w'))
-    json.dump(allTestsPerApp, open('allTestsPerApp.json', 'w'))
 
     createFileForEachISP(allTestsPerISP, parentDir=resultsDir)
     logger.info(
@@ -612,12 +571,13 @@ def main():
     analysisStarts = time.time()
 
     if len(sys.argv) != 3:
-        print('\r\n Example run: python3 WeheDataParser.py [clientsDir] [resultsDir], '
-              'where the clientsDir is where the data from all clients is, resultsDir is where to put the results')
+        print('\r\n Example run: python3 WeheDataParser.py [testsDir] [resultsDir], '
+              'where the testsDir is where the tests are, resultsDir is where to put the results')
+        sys.exit(1)
 
-    script, clientDir, resultsDir = sys.argv
+    script, testsDir, resultsDir = sys.argv
 
-    createJSONForallISP(clientsDir, resultsDir)
+    createJSONForallISP(testsDir, resultsDir)
 
     analysisEnds = time.time()
 
