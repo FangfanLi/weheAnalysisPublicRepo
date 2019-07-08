@@ -1499,55 +1499,54 @@ class singleISPstats(object):
 
         currentYlim = None
         currentY2lim = None
-        # if prominent values are found, plot:
-        if len(allProminentValues):
-            fig, ax1 = plt.subplots(figsize=(15, 6))
+        # plot:
+        fig, ax1 = plt.subplots(figsize=(15, 6))
 
-            plotSamples = []
-            plotDensities = []
+        plotSamples = []
+        plotDensities = []
 
-            for index in range(len(samples)):
-                if samples[index] > binsFrenquency[-1]:
-                    continue
-                plotSamples.append(samples[index])
-                plotDensities.append(densities[index])
-            if 'random' in plotTitle:
-                ax1.hist(dataSamples, binsFrenquency, color='#404040')
-            else:
-                ax1.hist(dataSamples, binsFrenquency)
+        for index in range(len(samples)):
+            if samples[index] > binsFrenquency[-1]:
+                continue
+            plotSamples.append(samples[index])
+            plotDensities.append(densities[index])
+        if 'random' in plotTitle:
+            ax1.hist(dataSamples, binsFrenquency, color='#404040')
+        else:
+            ax1.hist(dataSamples, binsFrenquency)
 
-            currentYlim = ax1.get_ylim()[1]
-            if ylim and currentYlim:
-                currentYlim = max(ylim, currentYlim)
-            ax1.set_ylim(top=currentYlim)
+        currentYlim = ax1.get_ylim()[1]
+        if ylim and currentYlim:
+            currentYlim = max(ylim, currentYlim)
+        ax1.set_ylim(top=currentYlim)
 
-            ax1.set_ylabel('Number of tests')
-            ax1.set_xlabel(xlabel)
+        ax1.set_ylabel('Number of tests')
+        ax1.set_xlabel(xlabel)
 
-            ax2 = ax1.twinx()
-            ax2.set_ylabel('Normalized Density')
-            ax2.plot(plotSamples, plotDensities, c="k", alpha=0.4)
-            for m in range(len(allProminentValues)):
-                ax2.scatter(allProminentValues[m], allProminentDensities[m], c="seagreen", s=20)
-            if threshold:
-                plt.axhline(y=threshold, color='r', linestyle='-')
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Normalized Density')
+        ax2.plot(plotSamples, plotDensities, c="k", alpha=0.4)
+        for m in range(len(allProminentValues)):
+            ax2.scatter(allProminentValues[m], allProminentDensities[m], c="seagreen", s=20)
+        if threshold:
+            plt.axhline(y=threshold, color='r', linestyle='-')
 
-            currentY2lim = ax2.get_ylim()[1]
-            if y2lim and currentY2lim:
-                currentY2lim = max(y2lim, currentY2lim)
-            # ax2.set_ylim(top=3.0, bottom=0.0)
-            # set font size
-            for ax in [ax1, ax2]:
-                for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
-                             ax.get_xticklabels() + ax.get_yticklabels()):
-                    item.set_fontsize(15)
+        currentY2lim = ax2.get_ylim()[1]
+        if y2lim and currentY2lim:
+            currentY2lim = max(y2lim, currentY2lim)
+        # ax2.set_ylim(top=3.0, bottom=0.0)
+        # set font size
+        for ax in [ax1, ax2]:
+            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                            ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(15)
 
-            fig.tight_layout()
-            plt.savefig(self.diffDir + '{}_KDE.png'.format(plotTitle), bbox_inches="tight",
+        fig.tight_layout()
+        plt.savefig(self.diffDir + '{}_KDE.png'.format(plotTitle), bbox_inches="tight",
                         pad_inches=0)
-            plt.cla()
-            plt.clf()
-            plt.close('all')
+        plt.cla()
+        plt.clf()
+        plt.close('all')
 
         return allProminentValues, allProminentDensities, truePositiveRanges, currentYlim, currentY2lim
 
